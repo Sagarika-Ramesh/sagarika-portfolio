@@ -421,7 +421,7 @@ const skillRows = [
 				>
 					<canvas
 						id="portrait-canvas"
-						class="h-[360px] w-[300px] md:h-[420px] md:w-[380px]"
+						class="h-[450px] w-full md:h-[420px] md:w-[380px]"
 						aria-label="Animated portrait made of linear algebra, calculus, and statistics symbols"
 						role="img"
 					></canvas>
@@ -919,19 +919,18 @@ const skillRows = [
 				let returnDuration = 800;
 				let mobileReturnTimeout = 0;
 
+				const SAMPLE_STEP = 4;
+
 				function isMobile() {
 					return window.innerWidth < 768;
-				}
-
-				function getSampleStep() {
-					return isMobile() ? 8 : 4;
 				}
 
 				function getSize() {
 					if (!isMobile()) {
 						return { w: 380, h: 420 };
 					}
-					return { w: 300, h: 360 };
+					const w = canvas.clientWidth || window.innerWidth;
+					return { w, h: 450 };
 				}
 
 				function getCanvasPoint(clientX, clientY) {
@@ -964,7 +963,6 @@ const skillRows = [
 				}
 
 				function buildParticles(img) {
-					const SAMPLE_STEP = getSampleStep();
 					const { w, h } = getSize();
 					canvasW = w;
 					canvasH = h;

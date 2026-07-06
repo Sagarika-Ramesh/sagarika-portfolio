@@ -421,7 +421,7 @@ const skillRows = [
 				>
 					<canvas
 						id="portrait-canvas"
-						class="h-[450px] w-full md:h-[420px] md:w-[380px]"
+						class="h-[340px] w-[280px] md:h-[420px] md:w-[380px]"
 						aria-label="Animated portrait made of linear algebra, calculus, and statistics symbols"
 						role="img"
 					></canvas>
@@ -929,8 +929,7 @@ const skillRows = [
 					if (!isMobile()) {
 						return { w: 380, h: 420 };
 					}
-					const w = canvas.clientWidth || window.innerWidth;
-					return { w, h: 450 };
+					return { w: 280, h: 340 };
 				}
 
 				function getCanvasPoint(clientX, clientY) {
@@ -1130,6 +1129,42 @@ const skillRows = [
 					}
 				}
 
+				function disperseFrom(x, y) {
+					clearTimeout(mobileReturnTimeout);
+					stopAnimation();
+					applyDisperse(x, y, 120);
+					animMode = 'interact';
+					animFrameId = requestAnimationFrame(function interactTick() {
+						let moving = false;
+
+						for (const p of particles) {
+							p.x += (p.targetX - p.x) * 0.28;
+							p.y += (p.targetY - p.y) * 0.28;
+							if (
+								Math.abs(p.x - p.targetX) > 0.5 ||
+								Math.abs(p.y - p.targetY) > 0.5
+							) {
+								moving = true;
+							}
+						}
+						draw();
+
+						if (moving) {
+							animFrameId = requestAnimationFrame(interactTick);
+							return;
+						}
+
+						for (const p of particles) {
+							p.returnFromX = p.x;
+							p.returnFromY = p.y;
+						}
+						animMode = 'return';
+						returnStart = performance.now();
+						returnDuration = 1000;
+						animFrameId = requestAnimationFrame(tick);
+					});
+				}
+
 				function bindInteractionListeners() {
 					if (listenersBound) return;
 					listenersBound = true;
@@ -1151,18 +1186,17 @@ const skillRows = [
 
 					canvas.addEventListener(
 						'touchstart',
-						(event) => {
-							if (!isMobile()) return;
-							event.preventDefault();
-							const touch = event.touches[0];
-							if (!touch) return;
-							const { x, y } = getCanvasPoint(
-								touch.clientX,
-								touch.clientY,
-							);
-							applyDisperse(x, y, 120);
-							startInteractLoop();
-							startReturn(1000, 800);
+						function (e) {
+							e.preventDefault();
+							const rect = canvas.getBoundingClientRect();
+							const touch = e.touches[0];
+							const touchX =
+								(touch.clientX - rect.left) *
+								(canvas.width / rect.width);
+							const touchY =
+								(touch.clientY - rect.top) *
+								(canvas.height / rect.height);
+							disperseFrom(touchX, touchY);
 						},
 						{ passive: false },
 					);

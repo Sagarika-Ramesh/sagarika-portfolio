@@ -907,12 +907,17 @@ const skillRows = [
 				const sourceCtx = sourceCanvas.getContext('2d');
 				if (!ctx || !sourceCtx) return;
 
-				/** @type {{ x: number; y: number; char: string; size: number; opacity: number; amplitude: number; speed: number }[]} */
+				/** @type {{ ox: number; oy: number; x: number; y: number; targetX: number; targetY: number; returnFromX: number; returnFromY: number; char: string; size: number; opacity: number }[]} */
 				let particles = [];
 				let canvasW = 0;
 				let canvasH = 0;
 				let initialized = false;
+				let listenersBound = false;
 				let animFrameId = 0;
+				let animMode = 'idle';
+				let returnStart = 0;
+				let returnDuration = 800;
+				let mobileReturnTimeout = 0;
 
 				function isMobile() {
 					return window.innerWidth < 768;
@@ -927,6 +932,16 @@ const skillRows = [
 						return { w: 380, h: 420 };
 					}
 					return { w: 300, h: 360 };
+				}
+
+				function getCanvasPoint(clientX, clientY) {
+					const rect = canvas.getBoundingClientRect();
+					const scaleX = canvas.width / rect.width;
+					const scaleY = canvas.height / rect.height;
+					return {
+						x: (clientX - rect.left) * scaleX,
+						y: (clientY - rect.top) * scaleY,
+					};
 				}
 
 				function brightness(r, g, b) {
@@ -974,20 +989,26 @@ const skillRows = [
 							const opacity = opacityForBrightness(lum);
 							if (opacity < 0.2) continue;
 
+							const px = x + SAMPLE_STEP / 2;
+							const py = y + SAMPLE_STEP / 2;
 							particles.push({
-								x: x + SAMPLE_STEP / 2,
-								y: y + SAMPLE_STEP / 2,
+								ox: px,
+								oy: py,
+								x: px,
+								y: py,
+								targetX: px,
+								targetY: py,
+								returnFromX: px,
+								returnFromY: py,
 								char: pickChar(),
 								size: sizeForBrightness(lum),
 								opacity,
-								amplitude: 3 + Math.random() * 3,
-								speed: 0.5 + Math.random() * 1,
 							});
 						}
 					}
 				}
 
-				function renderParticles(waveY) {
+				function draw() {
 					ctx.clearRect(0, 0, canvasW, canvasH);
 
 					for (const p of particles) {
@@ -997,21 +1018,156 @@ const skillRows = [
 						ctx.font = `${p.size}px Inter, system-ui, sans-serif`;
 						ctx.textAlign = 'center';
 						ctx.textBaseline = 'middle';
-						ctx.fillText(p.char, p.x, p.y + waveY(p));
+						ctx.fillText(p.char, p.x, p.y);
 						ctx.restore();
 					}
 				}
 
-				function drawStatic() {
-					renderParticles(() => 0);
+				function applyDisperse(px, py, radius) {
+					const minFly = 80;
+					const maxFly = 150;
+
+					for (const p of particles) {
+						const dx = p.ox - px;
+						const dy = p.oy - py;
+						const dist = Math.hypot(dx, dy);
+
+						if (dist > radius || dist < 0.001) {
+							p.targetX = p.ox;
+							p.targetY = p.oy;
+							continue;
+						}
+
+						const force = 1 - dist / radius;
+						const fly = minFly + force * (maxFly - minFly);
+						p.targetX = p.ox + (dx / dist) * fly;
+						p.targetY = p.oy + (dy / dist) * fly;
+					}
 				}
 
-				function drawAnimated(now) {
-					const time = now / 1000;
-					renderParticles(
-						(p) => Math.sin(time * p.speed + p.x * 0.05) * p.amplitude,
+				function stopAnimation() {
+					cancelAnimationFrame(animFrameId);
+					animFrameId = 0;
+				}
+
+				function tick(now) {
+					if (animMode === 'interact') {
+						let moving = false;
+
+						for (const p of particles) {
+							p.x += (p.targetX - p.x) * 0.28;
+							p.y += (p.targetY - p.y) * 0.28;
+							if (
+								Math.abs(p.x - p.targetX) > 0.5 ||
+								Math.abs(p.y - p.targetY) > 0.5
+							) {
+								moving = true;
+							}
+						}
+						draw();
+
+						if (moving) {
+							animFrameId = requestAnimationFrame(tick);
+						} else {
+							animFrameId = 0;
+						}
+						return;
+					}
+
+					if (animMode === 'return') {
+						const elapsed = now - returnStart;
+						const t = Math.min(1, elapsed / returnDuration);
+						const ease = 1 - (1 - t) ** 3;
+
+						for (const p of particles) {
+							p.x = p.returnFromX + (p.ox - p.returnFromX) * ease;
+							p.y = p.returnFromY + (p.oy - p.returnFromY) * ease;
+						}
+						draw();
+
+						if (t < 1) {
+							animFrameId = requestAnimationFrame(tick);
+						} else {
+							for (const p of particles) {
+								p.x = p.ox;
+								p.y = p.oy;
+								p.targetX = p.ox;
+								p.targetY = p.oy;
+							}
+							animMode = 'idle';
+							animFrameId = 0;
+						}
+					}
+				}
+
+				function startInteractLoop() {
+					if (animMode === 'return') {
+						stopAnimation();
+					}
+					animMode = 'interact';
+					if (!animFrameId) {
+						animFrameId = requestAnimationFrame(tick);
+					}
+				}
+
+				function startReturn(delay = 0, duration = 800) {
+					stopAnimation();
+					clearTimeout(mobileReturnTimeout);
+
+					const begin = () => {
+						for (const p of particles) {
+							p.returnFromX = p.x;
+							p.returnFromY = p.y;
+						}
+						animMode = 'return';
+						returnStart = performance.now();
+						returnDuration = duration;
+						animFrameId = requestAnimationFrame(tick);
+					};
+
+					if (delay > 0) {
+						mobileReturnTimeout = setTimeout(begin, delay);
+					} else {
+						begin();
+					}
+				}
+
+				function bindInteractionListeners() {
+					if (listenersBound) return;
+					listenersBound = true;
+
+					canvas.addEventListener('mousemove', (event) => {
+						if (isMobile()) return;
+						const { x, y } = getCanvasPoint(
+							event.clientX,
+							event.clientY,
+						);
+						applyDisperse(x, y, 100);
+						startInteractLoop();
+					});
+
+					canvas.addEventListener('mouseleave', () => {
+						if (isMobile()) return;
+						startReturn(0, 800);
+					});
+
+					canvas.addEventListener(
+						'touchstart',
+						(event) => {
+							if (!isMobile()) return;
+							event.preventDefault();
+							const touch = event.touches[0];
+							if (!touch) return;
+							const { x, y } = getCanvasPoint(
+								touch.clientX,
+								touch.clientY,
+							);
+							applyDisperse(x, y, 120);
+							startInteractLoop();
+							startReturn(1000, 800);
+						},
+						{ passive: false },
 					);
-					animFrameId = requestAnimationFrame(drawAnimated);
 				}
 
 				function startPortrait() {
@@ -1022,11 +1178,8 @@ const skillRows = [
 					img.src = '/sagarika_2.jpg';
 					img.onload = () => {
 						buildParticles(img);
-						if (isMobile()) {
-							drawStatic();
-						} else {
-							animFrameId = requestAnimationFrame(drawAnimated);
-						}
+						draw();
+						bindInteractionListeners();
 					};
 				}
 
@@ -1048,16 +1201,14 @@ const skillRows = [
 					if (!initialized) return;
 					clearTimeout(resizeTimer);
 					resizeTimer = setTimeout(() => {
-						cancelAnimationFrame(animFrameId);
+						stopAnimation();
+						clearTimeout(mobileReturnTimeout);
+						animMode = 'idle';
 						const img = new Image();
 						img.src = '/sagarika_2.jpg';
 						img.onload = () => {
 							buildParticles(img);
-							if (isMobile()) {
-								drawStatic();
-							} else {
-								animFrameId = requestAnimationFrame(drawAnimated);
-							}
+							draw();
 						};
 					}, 200);
 				});

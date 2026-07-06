@@ -292,6 +292,9 @@ const skillRows = [
 			rel="stylesheet"
 		/>
 		<style>
+			.section {
+				@apply py-12;
+			}
 			#project-modal-backdrop {
 				opacity: 0;
 				transition: opacity 0.35s ease;
@@ -407,10 +410,10 @@ const skillRows = [
 			<!-- Hero -->
 			<section
 				id="top"
-				class="mx-auto flex min-h-[85vh] max-w-6xl flex-col px-6 pb-12 pt-20"
+				class="mx-auto min-h-[70vh] max-w-6xl px-6 pt-20"
 			>
 				<div
-					class="flex flex-1 flex-col justify-center items-start gap-10 lg:flex-row lg:items-center lg:gap-16"
+					class="flex flex-col items-start gap-10 pt-24 lg:flex-row lg:items-start lg:gap-16"
 				>
 				<!-- Symbol portrait: top on mobile, right on desktop -->
 				<div
@@ -427,7 +430,7 @@ const skillRows = [
 				</div>
 
 				<!-- Text content: below canvas on mobile, left on desktop -->
-				<div class="order-2 flex flex-col justify-center lg:order-1">
+				<div class="order-2 flex flex-col lg:order-1">
 					<p class="text-sm font-medium tracking-wide text-ink/50">
 						Senior Data Scientist · Austin, TX
 					</p>
@@ -463,7 +466,7 @@ const skillRows = [
 			</section>
 
 			<!-- Work -->
-			<section id="work" class="border-t border-ink/10 px-6 py-24">
+			<section id="work" class="section border-t border-ink/10 px-6">
 				<div class="mx-auto max-w-6xl">
 					<div
 						class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -718,7 +721,7 @@ const skillRows = [
 			</div>
 
 			<!-- About -->
-			<section id="about" class="border-t border-ink/10 px-6 py-24">
+			<section id="about" class="section border-t border-ink/10 px-6">
 				<div
 					class="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[35%_65%] lg:items-stretch"
 				>
@@ -778,7 +781,7 @@ const skillRows = [
 			</section>
 
 			<!-- Skills -->
-			<section id="skills" class="border-t border-ink/10 px-6 py-24">
+			<section id="skills" class="section border-t border-ink/10 px-6">
 				<div class="mx-auto max-w-6xl">
 					<h2 class="font-serif text-4xl tracking-tight md:text-5xl">
 						Skills
@@ -801,7 +804,7 @@ const skillRows = [
 			</section>
 
 			<!-- Contact -->
-			<section id="contact" class="border-t border-ink/10 px-6 py-24">
+			<section id="contact" class="section border-t border-ink/10 px-6">
 				<div class="mx-auto max-w-6xl">
 					<h2
 						class="font-serif text-4xl tracking-tight md:text-5xl lg:text-6xl"
@@ -837,7 +840,7 @@ const skillRows = [
 		</main>
 
 		<!-- Footer -->
-		<footer class="border-t border-ink/10 px-6 py-8">
+		<footer class="border-t border-ink/10 px-6 py-6">
 			<div class="mx-auto max-w-6xl text-sm text-ink/50">
 				<p>Built and designed by Sagarika Ramesh.</p>
 				<p class="mt-1">All rights reserved. ©</p>

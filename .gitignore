@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+.vercel/
+
+# env
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# local python libs (image processing)
+.python_libs/
+
+# unrelated nested project
+orbital-inclination/

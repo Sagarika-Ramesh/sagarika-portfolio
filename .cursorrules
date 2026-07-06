@@ -1,0 +1,10 @@
+You are helping build a personal portfolio site for a Senior Data Scientist.
+
+Stack: Astro, Tailwind CSS, deployed on Vercel.
+- No React unless explicitly requested
+- No blog, no CMS
+- Projects data lives in /content/projects.json
+- Contact section is a mailto link only — no form, no API
+- Keep components in /src/components as .astro files
+- Mobile-first responsive design
+- No unnecessary dependencies

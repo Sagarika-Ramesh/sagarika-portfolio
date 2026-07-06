@@ -417,11 +417,11 @@ const skillRows = [
 				>
 				<!-- Symbol portrait: top on mobile, right on desktop -->
 				<div
-					class="order-1 flex shrink-0 justify-center lg:order-2 lg:justify-end"
+					class="order-1 -mt-10 flex w-full shrink-0 justify-center lg:order-2 lg:w-auto lg:justify-end"
 				>
 					<canvas
 						id="portrait-canvas"
-						class="h-[400px] w-[320px] lg:h-[520px] lg:w-[420px]"
+						class="h-[300px] w-full lg:h-[420px] lg:w-[380px]"
 						aria-label="Animated portrait made of linear algebra, calculus, and statistics symbols"
 						role="img"
 					></canvas>
@@ -914,9 +914,11 @@ const skillRows = [
 				let canvasH = 0;
 
 				function getSize() {
-					return window.matchMedia('(min-width: 1024px)').matches
-						? { w: 420, h: 520 }
-						: { w: 320, h: 400 };
+					if (window.matchMedia('(min-width: 1024px)').matches) {
+						return { w: 380, h: 420 };
+					}
+					const w = canvas.clientWidth || Math.min(window.innerWidth - 48, 640);
+					return { w, h: 300 };
 				}
 
 				function brightness(r, g, b) {

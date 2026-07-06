@@ -421,7 +421,7 @@ const skillRows = [
 				>
 					<canvas
 						id="portrait-canvas"
-						class="h-[300px] w-full lg:h-[420px] lg:w-[380px]"
+						class="h-[360px] w-[300px] md:h-[420px] md:w-[380px]"
 						aria-label="Animated portrait made of linear algebra, calculus, and statistics symbols"
 						role="img"
 					></canvas>
@@ -897,7 +897,6 @@ const skillRows = [
 				}
 
 				const SYMBOL_COLOR = '#00C8A0';
-				const SAMPLE_STEP = 3;
 				const WHITE_THRESHOLD = 200;
 
 				const canvas = document.getElementById('portrait-canvas');
@@ -912,13 +911,22 @@ const skillRows = [
 				let particles = [];
 				let canvasW = 0;
 				let canvasH = 0;
+				let initialized = false;
+				let animFrameId = 0;
+
+				function isMobile() {
+					return window.innerWidth < 768;
+				}
+
+				function getSampleStep() {
+					return isMobile() ? 8 : 4;
+				}
 
 				function getSize() {
-					if (window.matchMedia('(min-width: 1024px)').matches) {
+					if (!isMobile()) {
 						return { w: 380, h: 420 };
 					}
-					const w = canvas.clientWidth || Math.min(window.innerWidth - 48, 640);
-					return { w, h: 300 };
+					return { w: 300, h: 360 };
 				}
 
 				function brightness(r, g, b) {
@@ -941,6 +949,7 @@ const skillRows = [
 				}
 
 				function buildParticles(img) {
+					const SAMPLE_STEP = getSampleStep();
 					const { w, h } = getSize();
 					canvasW = w;
 					canvasH = h;
@@ -978,44 +987,80 @@ const skillRows = [
 					}
 				}
 
-				function draw(now) {
-					const time = now / 1000;
-
+				function renderParticles(waveY) {
 					ctx.clearRect(0, 0, canvasW, canvasH);
 
 					for (const p of particles) {
-						const waveY =
-							Math.sin(time * p.speed + p.x * 0.05) * p.amplitude;
-
 						ctx.save();
 						ctx.globalAlpha = p.opacity;
 						ctx.fillStyle = SYMBOL_COLOR;
 						ctx.font = `${p.size}px Inter, system-ui, sans-serif`;
 						ctx.textAlign = 'center';
 						ctx.textBaseline = 'middle';
-						ctx.fillText(p.char, p.x, p.y + waveY);
+						ctx.fillText(p.char, p.x, p.y + waveY(p));
 						ctx.restore();
 					}
-
-					requestAnimationFrame(draw);
 				}
+
+				function drawStatic() {
+					renderParticles(() => 0);
+				}
+
+				function drawAnimated(now) {
+					const time = now / 1000;
+					renderParticles(
+						(p) => Math.sin(time * p.speed + p.x * 0.05) * p.amplitude,
+					);
+					animFrameId = requestAnimationFrame(drawAnimated);
+				}
+
+				function startPortrait() {
+					if (initialized) return;
+					initialized = true;
+
+					const img = new Image();
+					img.src = '/sagarika_2.jpg';
+					img.onload = () => {
+						buildParticles(img);
+						if (isMobile()) {
+							drawStatic();
+						} else {
+							animFrameId = requestAnimationFrame(drawAnimated);
+						}
+					};
+				}
+
+				const portraitObserver = new IntersectionObserver(
+					(entries) => {
+						for (const entry of entries) {
+							if (entry.isIntersecting) {
+								startPortrait();
+								portraitObserver.disconnect();
+							}
+						}
+					},
+					{ rootMargin: '50px' },
+				);
+				portraitObserver.observe(canvas);
 
 				let resizeTimer;
 				window.addEventListener('resize', () => {
+					if (!initialized) return;
 					clearTimeout(resizeTimer);
 					resizeTimer = setTimeout(() => {
+						cancelAnimationFrame(animFrameId);
 						const img = new Image();
 						img.src = '/sagarika_2.jpg';
-						img.onload = () => buildParticles(img);
+						img.onload = () => {
+							buildParticles(img);
+							if (isMobile()) {
+								drawStatic();
+							} else {
+								animFrameId = requestAnimationFrame(drawAnimated);
+							}
+						};
 					}, 200);
 				});
-
-				const img = new Image();
-				img.src = '/sagarika_2.jpg';
-				img.onload = () => {
-					buildParticles(img);
-					requestAnimationFrame(draw);
-				};
 			})();
 
 			const menuToggle = document.getElementById('menu-toggle');
